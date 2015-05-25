@@ -53,8 +53,6 @@ public class VideoActivity extends Activity implements Camera.PreviewCallback {
     Camera.Parameters cameraParms;
     private Visualization mDraw;
     private CameraPreview mPreview;
-    Sounds sounds;
-    Notific notific;
     VideoProcessor videoProcessor;
     private TextToSpeech tts;
 
@@ -69,17 +67,8 @@ public class VideoActivity extends Activity implements Camera.PreviewCallback {
 
 
 
-    public void click1(View view) {
-        sounds.sound(State.CLICK);
-    }
 
-    public void pixelsCheckboxClicked(View view){
-        videoProcessor.setShowPixels( ((CheckBox)view).isChecked() );
-    }
 
-    public void soundCheckboxClicked(View view){
-        sounds.setEnabled(((CheckBox) view).isChecked());
-    }
 
     public void flashCheckboxClicked(View view){
         boolean checked = ((CheckBox) view).isChecked();
@@ -125,7 +114,6 @@ public class VideoActivity extends Activity implements Camera.PreviewCallback {
                 }
             }
         });
-        sounds = new Sounds(this, tts);
 
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.video);
@@ -194,8 +182,7 @@ public class VideoActivity extends Activity implements Camera.PreviewCallback {
 
         Log.w("VideoActivity", "chosen preview size "+s.width + " x "+s.height);
 
-        notific = new Notific(sounds);
-        videoProcessor = new VideoProcessor(s, notific);
+        videoProcessor = new VideoProcessor(s);
 
         // start image processing thread
         thread = new ThreadProcess();
