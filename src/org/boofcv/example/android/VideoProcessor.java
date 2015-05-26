@@ -72,7 +72,7 @@ public class VideoProcessor {
             for (int x = 0; x < w; x++) { // 320 x 240
                 int y = output.getHeight() - 1 - brightnessHistory[x] * output.getHeight() / 255;
                 for( int i=Math.min(yprev,y); i<=Math.max(yprev,y); i++ ) {
-                    output.setPixel(x, y, Color.BLUE);
+                    output.setPixel(x, i, Color.BLUE);
                 }
                 yprev = y;
             }
