@@ -12,6 +12,7 @@ import boofcv.factory.filter.derivative.FactoryDerivative;
 import boofcv.struct.image.*;
 
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 
 /**
  * Created by denny on 5/7/15.
@@ -25,6 +26,8 @@ public class VideoProcessor {
 
     // Android image data used for displaying the results
     private Bitmap output;
+    int[] brightnessHistory;
+    int brightnessIdx=0;
     // temporary storage that's needed when converting from BoofCV to Android image data types
     private byte[] storage;
 
@@ -37,6 +40,7 @@ public class VideoProcessor {
         gray = new BufRW<ImageUInt8>( new ImageUInt8(s.width,s.height), new ImageUInt8(s.width,s.height) );
 
         output = Bitmap.createBitmap(s.width,s.height,Bitmap.Config.ARGB_8888 );
+        brightnessHistory = new int[s.width];
         storage = ConvertBitmap.declareStorage(output, storage);
 
     }
@@ -49,12 +53,29 @@ public class VideoProcessor {
             GImageMiscOps.flipHorizontal(gray.readBuf);
         }
 
+        int sum=0;
+        for( byte v : gray.readBuf.data ){
+            sum += (0xff & v);
+        }
+        sum /= gray.readBuf.data.length;
+        brightnessHistory[brightnessIdx] = sum;
+        brightnessIdx = (brightnessIdx+1) % brightnessHistory.length;
+
         // process the image and compute its gradient
        // gradient.process(gray.readBuf,derivX,derivY);
 
         // render the output in a synthetic color image
         synchronized ( lockOutput ) {
            ConvertBitmap.grayToBitmap(gray.readBuf, output, storage);
+            int w = output.getWidth();
+            int yprev=0;
+            for (int x = 0; x < w; x++) { // 320 x 240
+                int y = output.getHeight() - 1 - brightnessHistory[x] * output.getHeight() / 255;
+                for( int i=Math.min(yprev,y); i<=Math.max(yprev,y); i++ ) {
+                    output.setPixel(x, y, Color.BLUE);
+                }
+                yprev = y;
+            }
         }
 
     }
