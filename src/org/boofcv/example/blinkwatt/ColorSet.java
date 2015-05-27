@@ -1,4 +1,4 @@
-package org.boofcv.example.android;
+package org.boofcv.example.blinkwatt;
 
 import java.util.Arrays;
 import java.util.HashSet;

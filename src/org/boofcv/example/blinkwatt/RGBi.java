@@ -1,4 +1,4 @@
-package org.boofcv.example.android;
+package org.boofcv.example.blinkwatt;
 
 /**
 * Created by denny on 5/18/15.

@@ -17,7 +17,7 @@
  */
 
 
-package org.boofcv.example.android;
+package org.boofcv.example.blinkwatt;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -150,6 +150,10 @@ public class VideoActivity extends Activity implements Camera.PreviewCallback {
     @Override
     protected void onPause() {
         super.onPause();
+
+        if( videoProcessor!=null ){
+            videoProcessor.onPause();
+        }
 
         // stop the camera preview and all processing
         if (mCamera != null){

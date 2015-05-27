@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.boofcv.example.android;
+package org.boofcv.example.blinkwatt;
 
 import android.content.Context;
 import android.hardware.Camera;
@@ -25,8 +25,6 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
-
-import java.io.IOException;
 
 /**
  * Displays (or hides) the camera preview.  Adjusts the camera preview so that the displayed ratio is the same

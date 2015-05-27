@@ -1,8 +1,9 @@
-package org.boofcv.example.android;
+package org.boofcv.example.blinkwatt;
 
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.hardware.Camera;
+import android.os.Environment;
 import android.util.Log;
 import boofcv.abst.filter.derivative.ImageGradient;
 import boofcv.alg.misc.GImageMiscOps;
@@ -11,8 +12,9 @@ import boofcv.android.ConvertNV21;
 import boofcv.factory.filter.derivative.FactoryDerivative;
 import boofcv.struct.image.*;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
 
 /**
  * Created by denny on 5/7/15.
@@ -34,6 +36,15 @@ public class VideoProcessor {
     // computes the image gradient
     private ImageGradient<ImageUInt8,ImageSInt16> gradient = FactoryDerivative.three(ImageUInt8.class, ImageSInt16.class);
 
+    FileWriter dataOut;
+
+    public void onPause(){
+        try {
+            dataOut.flush();
+        } catch (IOException e) {
+            throw new RuntimeException("",e);
+        }
+    }
 
     public VideoProcessor(Camera.Size s) {
         // declare image data
@@ -43,6 +54,16 @@ public class VideoProcessor {
         brightnessHistory = new int[s.width];
         storage = ConvertBitmap.declareStorage(output, storage);
 
+        String filename = getSdCardPath() + "blinkGauge.txt";
+        try {
+            dataOut = new FileWriter(filename, true);
+        } catch (IOException e) {
+            throw new RuntimeException(filename, e);
+        }
+    }
+
+    public static String getSdCardPath() {
+        return Environment.getExternalStorageDirectory().getPath() + "/";
     }
 
 
@@ -53,12 +74,19 @@ public class VideoProcessor {
             GImageMiscOps.flipHorizontal(gray.readBuf);
         }
 
-        int sum=0;
+        double sum=0;
         for( byte v : gray.readBuf.data ){
             sum += (0xff & v);
         }
         sum /= gray.readBuf.data.length;
-        brightnessHistory[brightnessIdx] = sum;
+
+        try {
+            dataOut.write(sum+"\n");
+        } catch (IOException e) {
+            throw new RuntimeException("",e);
+        }
+
+        brightnessHistory[brightnessIdx] = (int)sum;
         brightnessIdx = (brightnessIdx+1) % brightnessHistory.length;
 
         // process the image and compute its gradient
