@@ -15,6 +15,8 @@ import boofcv.struct.image.*;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by denny on 5/7/15.
@@ -28,10 +30,15 @@ public class VideoProcessor {
 
     // Android image data used for displaying the results
     private Bitmap output;
+    volatile long watts=-20;
+
+
     int[] brightnessHistory;
     int brightnessIdx=0;
     // temporary storage that's needed when converting from BoofCV to Android image data types
     private byte[] storage;
+
+    List<MPoint> mpointHistory = new ArrayList<MPoint>();
 
     // computes the image gradient
     private ImageGradient<ImageUInt8,ImageSInt16> gradient = FactoryDerivative.three(ImageUInt8.class, ImageSInt16.class);
@@ -79,9 +86,24 @@ public class VideoProcessor {
             sum += (0xff & v);
         }
         sum /= gray.readBuf.data.length;
+        mpointHistory.add(new MPoint(System.currentTimeMillis(), sum));
+        if( mpointHistory.size()>30 ){
+            MPoints mp = new MPoints(mpointHistory.subList(mpointHistory.size()-30,mpointHistory.size()));
+            if( mp.valid() ){
+                List<Long> starts = mp.impStarts();
+                if( starts.size()>2 ){
+                    long dt = starts.get(starts.size()-1) - starts.get(starts.size()-2);
+                    watts = 1000L * 3600 * 1000 / Watt.IMP_PER_KWATTH / dt;
+                }else{
+                    watts = -1;
+                }
+            }else{
+                watts = -2;
+            }
+        }
 
         try {
-            dataOut.write(sum+"\n");
+            dataOut.write(System.currentTimeMillis() + " " + sum+"\n");
         } catch (IOException e) {
             throw new RuntimeException("",e);
         }
@@ -96,9 +118,10 @@ public class VideoProcessor {
         synchronized ( lockOutput ) {
            ConvertBitmap.grayToBitmap(gray.readBuf, output, storage);
             int w = output.getWidth();
+            int maxH = output.getHeight()*4/5;
             int yprev=0;
             for (int x = 0; x < w; x++) { // 320 x 240
-                int y = output.getHeight() - 1 - brightnessHistory[x] * output.getHeight() / 255;
+                int y = maxH - 1 - brightnessHistory[x] * maxH / 255;
                 for( int i=Math.min(yprev,y); i<=Math.max(yprev,y); i++ ) {
                     output.setPixel(x, i, Color.BLUE);
                 }

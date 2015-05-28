@@ -34,6 +34,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.CheckBox;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 
 import java.util.List;
 import java.util.Locale;
@@ -119,12 +120,15 @@ public class VideoActivity extends Activity implements Camera.PreviewCallback {
         setContentView(R.layout.video);
 
         // Used to visualize the results
-        mDraw = new Visualization(this);
+        mDraw = new Visualization(this, (TextView)findViewById(R.id.watts));
 
         // Create our Preview view and set it as the content of our activity.
         mPreview = new CameraPreview(this,this,true);
 
         FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
+
+        TextView impText = (TextView)findViewById(R.id.imp_per_kwatth);
+        impText.setText("Calibrated for: "+Watt.IMP_PER_KWATTH+" imp/kwatt*h");
 
         preview.addView(mPreview);
         preview.addView(mDraw);
@@ -289,10 +293,12 @@ public class VideoActivity extends Activity implements Camera.PreviewCallback {
     private class Visualization extends SurfaceView {
 
         Activity activity;
+        TextView watts;
 
-        public Visualization(Activity context ) {
+        public Visualization(Activity context, TextView watts ) {
             super(context);
             this.activity = context;
+            this.watts = watts;
 
             // This call is necessary, or else the
             // draw method will not be called.
@@ -321,6 +327,8 @@ public class VideoActivity extends Activity implements Camera.PreviewCallback {
 
                 // draw the image
                 canvas.drawBitmap(output,0,0,null);
+
+                watts.setText("Watts="+videoProcessor.watts);
             }
         }
     }
