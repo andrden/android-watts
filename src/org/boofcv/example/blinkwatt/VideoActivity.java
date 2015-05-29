@@ -120,7 +120,8 @@ public class VideoActivity extends Activity implements Camera.PreviewCallback {
         setContentView(R.layout.video);
 
         // Used to visualize the results
-        mDraw = new Visualization(this, (TextView)findViewById(R.id.watts));
+        mDraw = new Visualization(this,
+                (TextView)findViewById(R.id.watts), (TextView)findViewById(R.id.fps));
 
         // Create our Preview view and set it as the content of our activity.
         mPreview = new CameraPreview(this,this,true);
@@ -294,11 +295,13 @@ public class VideoActivity extends Activity implements Camera.PreviewCallback {
 
         Activity activity;
         TextView watts;
+        TextView fps;
 
-        public Visualization(Activity context, TextView watts ) {
+        public Visualization(Activity context, TextView watts, TextView fps ) {
             super(context);
             this.activity = context;
             this.watts = watts;
+            this.fps=fps;
 
             // This call is necessary, or else the
             // draw method will not be called.
@@ -328,7 +331,8 @@ public class VideoActivity extends Activity implements Camera.PreviewCallback {
                 // draw the image
                 canvas.drawBitmap(output,0,0,null);
 
-                watts.setText("Watts="+videoProcessor.watts);
+                watts.setText(""+videoProcessor.watts);
+                fps.setText(videoProcessor.fps()+" fps");
             }
         }
     }

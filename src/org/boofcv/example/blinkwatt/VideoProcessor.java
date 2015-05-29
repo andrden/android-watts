@@ -31,6 +31,8 @@ public class VideoProcessor {
     // Android image data used for displaying the results
     private Bitmap output;
     volatile long watts=-20;
+    final long tstart = System.currentTimeMillis();
+    volatile long frames=0;
 
 
     int[] brightnessHistory;
@@ -44,6 +46,14 @@ public class VideoProcessor {
     private ImageGradient<ImageUInt8,ImageSInt16> gradient = FactoryDerivative.three(ImageUInt8.class, ImageSInt16.class);
 
     FileWriter dataOut;
+
+    long fps(){
+        long dt = System.currentTimeMillis()-tstart;
+        if( dt<1 ){
+            return -1;
+        }
+        return frames*1000/dt;
+    }
 
     public void onPause(){
         try {
@@ -119,16 +129,27 @@ public class VideoProcessor {
            ConvertBitmap.grayToBitmap(gray.readBuf, output, storage);
             int w = output.getWidth();
             int maxH = output.getHeight()*4/5;
+            int maxBright = 10 + max(brightnessHistory);
             int yprev=0;
             for (int x = 0; x < w; x++) { // 320 x 240
-                int y = maxH - 1 - brightnessHistory[x] * maxH / 255;
+                int y = maxH - 1 - brightnessHistory[x] * maxH / maxBright;
                 for( int i=Math.min(yprev,y); i<=Math.max(yprev,y); i++ ) {
                     output.setPixel(x, i, Color.BLUE);
                 }
                 yprev = y;
             }
+            frames++;
         }
 
+
+    }
+
+    int max(int[] arr){
+        int m = arr[0];
+        for( int v: arr){
+            m = Math.max(m, v);
+        }
+        return m;
     }
 
     static class RGBf{
