@@ -16,6 +16,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -83,6 +84,19 @@ public class VideoProcessor {
         return Environment.getExternalStorageDirectory().getPath() + "/";
     }
 
+    List<MPoint> history(int sec){
+        List<MPoint> ret = new ArrayList<MPoint>();
+        long oldest = System.currentTimeMillis() - 1000 * sec;
+        for( int i=mpointHistory.size()-1; i>=0; i-- ){
+            MPoint p = mpointHistory.get(i);
+            if( p.time < oldest ){
+                break;
+            }
+            ret.add(p);
+        }
+        Collections.reverse(ret);
+        return ret;
+    }
 
     public void backgroundProcess(boolean flipHorizontal) {
         gray.syncSwapBufs();
@@ -97,20 +111,8 @@ public class VideoProcessor {
         }
         sum /= gray.readBuf.data.length;
         mpointHistory.add(new MPoint(System.currentTimeMillis(), sum));
-        if( mpointHistory.size()>30 ){
-            MPoints mp = new MPoints(mpointHistory.subList(mpointHistory.size()-30,mpointHistory.size()));
-            if( mp.valid() ){
-                List<Long> starts = mp.impStarts();
-                if( starts.size()>2 ){
-                    long dt = starts.get(starts.size()-1) - starts.get(starts.size()-2);
-                    watts = 1000L * 3600 * 1000 / Watt.IMP_PER_KWATTH / dt;
-                }else{
-                    watts = -1;
-                }
-            }else{
-                watts = -2;
-            }
-        }
+
+        wattsCalculate();
 
         try {
             dataOut.write(System.currentTimeMillis() + " " + sum+"\n");
@@ -142,6 +144,31 @@ public class VideoProcessor {
         }
 
 
+    }
+
+    void wattsCalculate() {
+        Long w = null;
+        MPoints mp3 = new MPoints(history(3)); // 3 seconds period priority
+        if( mp3.valid() ) {
+            w = mp3.watts();
+        }
+        if( w==null ) {
+            MPoints mp10 = new MPoints(history(10)); // 10 seconds period, 56 watt min for 6400 imp/kwt*h
+            if( mp10.valid() ) {
+                w = mp10.watts();
+            }
+        }
+        if( w==null ) {
+            MPoints mp30 = new MPoints(history(30)); // 30 seconds period
+            if( mp30.valid() ) {
+                w = mp30.watts();
+            }
+        }
+        if( w!=null ) {
+            watts = w;
+        }else {
+            watts = -1;
+        }
     }
 
     int max(int[] arr){

@@ -34,7 +34,7 @@ public class MPoints {
     }
 
     public boolean valid(){
-        return countOver(max()*0.95)>0.6*list.size();
+        return list.size()>10 && countOver(max()*0.95)>0.6*list.size();
     }
 
     public List<Long> impStarts(){
@@ -52,5 +52,15 @@ public class MPoints {
             }
         }
         return starts;
+    }
+
+    Long watts(){
+        List<Long> starts = impStarts();
+        if( starts.size()>=2 ) {
+            long dt = starts.get(starts.size() - 1) - starts.get(0);
+            long watts = (starts.size() - 1) * 1000L * 3600 * 1000 / Watt.IMP_PER_KWATTH / dt;
+            return watts;
+        }
+        return null;
     }
 }
