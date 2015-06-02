@@ -32,8 +32,10 @@ public class VideoProcessor {
     // Android image data used for displaying the results
     private Bitmap output;
     volatile long watts=-20;
+    volatile long wattsAvgSeconds;
     final long tstart = System.currentTimeMillis();
     volatile long frames=0;
+    volatile long cameraFrames=0;
 
 
     int[] brightnessHistory;
@@ -147,28 +149,23 @@ public class VideoProcessor {
     }
 
     void wattsCalculate() {
-        Long w = null;
-        MPoints mp3 = new MPoints(history(3)); // 3 seconds period priority
-        if( mp3.valid() ) {
-            w = mp3.watts();
-        }
-        if( w==null ) {
-            MPoints mp10 = new MPoints(history(10)); // 10 seconds period, 56 watt min for 6400 imp/kwt*h
-            if( mp10.valid() ) {
-                w = mp10.watts();
+        int[] tries = {60, 30, 20, 10, 5, 3};
+        // e.g. 10 seconds period, 56 watt min for 6400 imp/kwt*h
+
+        for( int t : tries ){
+            MPoints mp = new MPoints(history(t));
+            if( mp.valid() ) {
+                Long w = mp.watts();
+                if( w!=null ){
+                    watts = w;
+                    wattsAvgSeconds = t;
+                    return;
+                }
             }
         }
-        if( w==null ) {
-            MPoints mp30 = new MPoints(history(30)); // 30 seconds period
-            if( mp30.valid() ) {
-                w = mp30.watts();
-            }
-        }
-        if( w!=null ) {
-            watts = w;
-        }else {
-            watts = -1;
-        }
+
+        wattsAvgSeconds = 0;
+        watts = -1;
     }
 
     int max(int[] arr){
@@ -222,6 +219,7 @@ public class VideoProcessor {
                 // convert from NV21 format into gray scale
                 ConvertNV21.nv21ToGray(bytes, gray.writeBuf.width, gray.writeBuf.height, gray.writeBuf);
             }
+            cameraFrames++;
         }catch(Throwable t){
             Log.w("VideoProcessor","onPreviewFrame",t);
         }

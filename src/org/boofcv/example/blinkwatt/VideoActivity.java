@@ -24,6 +24,8 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.hardware.Camera;
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
@@ -296,6 +298,10 @@ public class VideoActivity extends Activity implements Camera.PreviewCallback {
         Activity activity;
         TextView watts;
         TextView fps;
+        Paint paint = new Paint(){{
+          setStyle(Paint.Style.FILL);
+          setColor(Color.GREEN);
+        }};
 
         public Visualization(Activity context, TextView watts, TextView fps ) {
             super(context);
@@ -314,8 +320,13 @@ public class VideoActivity extends Activity implements Camera.PreviewCallback {
             synchronized ( videoProcessor.getLockOutput() ) {
                 int w = canvas.getWidth();
                 int h = canvas.getHeight();
+                canvas.drawCircle(canvas.getWidth()-20, videoProcessor.cameraFrames % canvas.getHeight(), 5, paint);
 
                 Bitmap output = videoProcessor.getOutput();
+
+                for( int dx=0; dx<=10; dx++ ){
+                    output.setPixel(output.getWidth()-1-dx, (int)(videoProcessor.cameraFrames % output.getHeight()), Color.RED);
+                }
 
                 // fill the window and center it
                 double scaleX = w/(double)output.getWidth();
@@ -332,7 +343,8 @@ public class VideoActivity extends Activity implements Camera.PreviewCallback {
                 canvas.drawBitmap(output,0,0,null);
 
                 watts.setText(""+videoProcessor.watts);
-                fps.setText(videoProcessor.fps()+" fps");
+                fps.setText("#"+videoProcessor.frames + "/" + videoProcessor.cameraFrames + " "
+                        + videoProcessor.fps()+" fps, avg "+videoProcessor.wattsAvgSeconds+" sec");
             }
         }
     }
