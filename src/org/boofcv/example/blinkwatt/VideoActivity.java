@@ -201,6 +201,12 @@ public class VideoActivity extends Activity implements Camera.PreviewCallback {
         Camera.Size s = sizes.get(closest(sizes,160,120));
         cameraParms.setPreviewSize(s.width, s.height);
         cameraParms.setFocusMode(Camera.Parameters.FOCUS_MODE_MACRO);
+
+        // Sony:
+        // cameraParms.get("iso-values") auto,off,ISO_HJR,ISO100,ISO200,ISO400,ISO800,ISO1600
+        cameraParms.set("iso", "ISO1600");
+
+        cameraParms.setPreviewFrameRate(20);
         //cameraParms.setPreviewFpsRange(15, 30);
         mCamera.setParameters(cameraParms);
 
@@ -329,7 +335,16 @@ public class VideoActivity extends Activity implements Camera.PreviewCallback {
 
         @Override
         protected void onDraw(Canvas canvas){
+            try{
+                onDrawTryCatch(canvas);
+            }catch (Throwable t){
+                AlertDialog show = new AlertDialog.Builder(activity)
+                        .setTitle("Err2").setMessage(""+t).setPositiveButton("OK",null).create();
+                show.show();
+            }
+        }
 
+        private void onDrawTryCatch(Canvas canvas) {
             Bitmap output = videoProcessor.getOutput();
             synchronized ( output ) {
                 int w = canvas.getWidth();
