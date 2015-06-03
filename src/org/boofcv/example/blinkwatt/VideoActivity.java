@@ -40,6 +40,7 @@ import android.widget.TextView;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Demonstration of how to process a video stream on an Android device using BoofCV.  Most of the code below
@@ -54,7 +55,9 @@ public class VideoActivity extends Activity implements Camera.PreviewCallback {
     // camera and display objects
     private Camera mCamera;
     Camera.Parameters cameraParms;
+
     private Visualization mDraw;
+
     private CameraPreview mPreview;
     VideoProcessor videoProcessor;
     private TextToSpeech tts;
@@ -151,7 +154,14 @@ public class VideoActivity extends Activity implements Camera.PreviewCallback {
     protected void onResume() {
         super.onResume();
         Log.w("VideoActivity", "onResume");
-        setUpAndConfigureCamera();
+        try {
+
+            setUpAndConfigureCamera();
+        }catch (Throwable t){
+            AlertDialog show = new AlertDialog.Builder(this)
+                    .setTitle("Err1").setMessage(""+t).setPositiveButton("OK",null).create();
+            show.show();
+        }
     }
 
     @Override
@@ -187,8 +197,11 @@ public class VideoActivity extends Activity implements Camera.PreviewCallback {
         // Select the preview size closest to 320x240
         // Smaller images are recommended because some computer vision operations are very expensive
         List<Camera.Size> sizes = cameraParms.getSupportedPreviewSizes();
-        Camera.Size s = sizes.get(closest(sizes,320,240));
+        //Camera.Size s = sizes.get(closest(sizes,320,240));
+        Camera.Size s = sizes.get(closest(sizes,160,120));
         cameraParms.setPreviewSize(s.width, s.height);
+        cameraParms.setFocusMode(Camera.Parameters.FOCUS_MODE_MACRO);
+        //cameraParms.setPreviewFpsRange(15, 30);
         mCamera.setParameters(cameraParms);
 
         Log.w("VideoActivity", "chosen preview size "+s.width + " x "+s.height);
@@ -317,12 +330,12 @@ public class VideoActivity extends Activity implements Camera.PreviewCallback {
         @Override
         protected void onDraw(Canvas canvas){
 
-            synchronized ( videoProcessor.getLockOutput() ) {
+            Bitmap output = videoProcessor.getOutput();
+            synchronized ( output ) {
                 int w = canvas.getWidth();
                 int h = canvas.getHeight();
                 canvas.drawCircle(canvas.getWidth()-20, videoProcessor.cameraFrames % canvas.getHeight(), 5, paint);
 
-                Bitmap output = videoProcessor.getOutput();
 
                 for( int dx=0; dx<=10; dx++ ){
                     output.setPixel(output.getWidth()-1-dx, (int)(videoProcessor.cameraFrames % output.getHeight()), Color.RED);

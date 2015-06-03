@@ -26,11 +26,10 @@ public class VideoProcessor {
     private BufRW<ImageUInt8> gray;
     //private BufRW<MultiSpectral<ImageFloat32>> yuv;
 
-    // Object used for synchronizing output image
-    private final Object lockOutput = new Object();
-
     // Android image data used for displaying the results
     private Bitmap output;
+    long lastWriteOutput = 0;
+
     volatile long watts=-20;
     volatile long wattsAvgSeconds;
     final long tstart = System.currentTimeMillis();
@@ -125,25 +124,28 @@ public class VideoProcessor {
         brightnessHistory[brightnessIdx] = (int)sum;
         brightnessIdx = (brightnessIdx+1) % brightnessHistory.length;
 
-        // process the image and compute its gradient
-       // gradient.process(gray.readBuf,derivX,derivY);
+        if( System.currentTimeMillis() - lastWriteOutput > 150 ) { // limit redraw to avoid stalled display
+            // process the image and compute its gradient
+            // gradient.process(gray.readBuf,derivX,derivY);
 
-        // render the output in a synthetic color image
-        synchronized ( lockOutput ) {
-           ConvertBitmap.grayToBitmap(gray.readBuf, output, storage);
-            int w = output.getWidth();
-            int maxH = output.getHeight()*4/5;
-            int maxBright = 10 + max(brightnessHistory);
-            int yprev=0;
-            for (int x = 0; x < w; x++) { // 320 x 240
-                int y = maxH - 1 - brightnessHistory[x] * maxH / maxBright;
-                for( int i=Math.min(yprev,y); i<=Math.max(yprev,y); i++ ) {
-                    output.setPixel(x, i, Color.BLUE);
+            // render the output in a synthetic color image
+            synchronized (output) {
+                ConvertBitmap.grayToBitmap(gray.readBuf, output, storage);
+                int w = output.getWidth();
+                int maxH = output.getHeight() * 4 / 5;
+                int maxBright = 10 + max(brightnessHistory);
+                int yprev = 0;
+                for (int x = 0; x < w; x++) { // 320 x 240
+                    int y = maxH - 1 - brightnessHistory[x] * maxH / maxBright;
+                    for (int i = Math.min(yprev, y); i <= Math.max(yprev, y); i++) {
+                        output.setPixel(x, i, Color.BLUE);
+                    }
+                    yprev = y;
                 }
-                yprev = y;
             }
-            frames++;
+            lastWriteOutput = System.currentTimeMillis();
         }
+        frames++;
 
 
     }
@@ -267,10 +269,6 @@ public class VideoProcessor {
 
     public Bitmap getOutput() {
         return output;
-    }
-
-    public Object getLockOutput() {
-        return lockOutput;
     }
 
     public static void multiToBitmap_F32(MultiSpectral<ImageFloat32> input, byte[] storage , Bitmap output ) {
